@@ -1,4 +1,4 @@
-name: Conda Python 3.11
+name: Conda Python 3.11 with tkinter and reportlab
 
 on:
   push:
@@ -11,17 +11,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Miniconda with Python 3.11
-      uses: conda-incubator/setup-miniconda@v3
-      with:
-        auto-update-conda: true
-        python-version: 3.11
-        channels: conda-forge
-        activate-environment: test-env
-        environment-file: environment.yml  # optionnel si tu utilises un fichier .yml
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          activate-environment: test-env
 
-    - name: Check Python version
-      shell: bash -l {0}
-      run: python --version
+      - name: Create Conda environment with Python 3.11, tkinter, reportlab
+        shell: bash -l {0}
+        run: |
+          conda create -n test-env python=3.11 tk reportlab -c conda-forge -y
+
+      - name: Activate Conda env and check Python version
+        shell: bash -l {0}
+        run: |
+          conda activate test-env
+          which python
+          python --version
+          python -c "import tkinter; import reportlab; print('tkinter and reportlab OK')"
