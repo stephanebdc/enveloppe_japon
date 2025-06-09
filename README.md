@@ -5,4 +5,4 @@ ce qu'il reste à faire :
 
 ->mettre le code postal en horizontal
 
-->intégréer les polices dans un binaire macos avec "pyinstaller --onefile --windowed --icon=icon.icns \  --add-data "fonts:fonts" \"
+

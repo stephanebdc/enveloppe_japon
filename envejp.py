@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 
-# envejp.py
+# envejp.py Version 2
+# avec le code postal hozirontal et les lignes à taille automatique
 # Copyright (c) 2025 Stéphane BDC
 #
 # This software is released under the MIT License.
@@ -40,6 +41,18 @@ import tempfile
 import datetime
 import shutil
 import re
+import sys
+
+def resource_path(relative_path):
+    """Obtient le chemin vers les ressources, compatible PyInstaller"""
+    try:
+        # PyInstaller crée un dossier temporaire et y stocke le chemin dans _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        # Mode développement - utilise le répertoire du script
+        base_path = os.path.abspath(".")
+    
+    return os.path.join(base_path, relative_path)
 
 class EnvelopeGenerator:
     def __init__(self):
@@ -61,11 +74,9 @@ class EnvelopeGenerator:
     def setup_japanese_font(self):
         """Configure la police japonaise depuis le dossier fonts/"""
         try:
-            # Chercher le fichier de police dans le dossier fonts/
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            font_dir = os.path.join(script_dir, "fonts")
+            # Utiliser resource_path pour obtenir le bon chemin
+            font_dir = resource_path("fonts")
             
-            print(f"Script directory: {script_dir}")
             print(f"Font directory: {font_dir}")
             print(f"Font directory exists: {os.path.exists(font_dir)}")
             
@@ -99,11 +110,28 @@ class EnvelopeGenerator:
             
             if len(available_fonts) == 0:
                 print("No valid fonts found in fonts directory")
-            elif len(available_fonts) == 1:
+                # Essayer les polices spécifiques que vous avez mentionnées
+                specific_fonts = ["SawarabiMincho-Regular.ttf", "NotoSansJP-VariableFont_wght.ttf"]
+                for font_name in specific_fonts:
+                    font_path = resource_path(os.path.join("fonts", font_name))
+                    if os.path.exists(font_path):
+                        try:
+                            test_name = f"TestFont_{len(available_fonts)}"
+                            pdfmetrics.registerFont(TTFont(test_name, font_path))
+                            available_fonts.append({
+                                'name': font_name,
+                                'path': font_path,
+                                'display_name': font_name.replace('.ttf', '')
+                            })
+                            print(f"Found specific font: {font_name}")
+                        except Exception as e:
+                            print(f"Failed to load specific font {font_name}: {e}")
+            
+            if len(available_fonts) == 1:
                 # Une seule police, l'utiliser directement
                 selected_font = available_fonts[0]
                 print(f"Single font found: {selected_font['name']}")
-            else:
+            elif len(available_fonts) > 1:
                 # Plusieurs polices, demander à l'utilisateur de choisir
                 selected_font = self.show_font_selection_dialog(available_fonts)
             
@@ -447,17 +475,16 @@ class EnvelopeGenerator:
         except Exception as e:
             self.add_status(f"❌ Erreur lors de la génération: {str(e)}")
             messagebox.showerror("Erreur", f"Impossible de générer le PDF:\n{str(e)}")
-
+    
     def create_pdf(self, filepath):
         """Crée le PDF avec l'adresse saisie"""
         # Création du PDF avec taille A5
         c = canvas.Canvas(filepath, pagesize=(A5[1], A5[0]))
-        c.setFont("JapaneseFont", 14)
-
+    
         # Dimensions de la page
         page_width = A5[1]
         page_height = A5[0]
-
+    
         # Récupérer les données du formulaire
         lines = []
         if self.address1_var.get().strip():
@@ -468,46 +495,115 @@ class EnvelopeGenerator:
             lines.append(self.company_var.get().strip())
         if self.recipient_var.get().strip():
             lines.append(self.recipient_var.get().strip())
-
+    
         postal_code = self.postal_code_var.get().strip()
-
+    
+        # Trouver la ligne la plus longue
+        max_line_length = max(len(line) for line in lines) if lines else 0
+    
+        # Calculer la taille de police et l'espacement en fonction de la longueur max
+        if max_line_length <= 16:
+            # Paramètres normaux
+            font_size = 14
+            char_spacing = 20
+        elif max_line_length <= 20:
+            # Réduction légère
+            font_size = 12
+            char_spacing = 18
+        elif max_line_length <= 24:
+            # Réduction moyenne
+            font_size = 10
+            char_spacing = 15
+        elif max_line_length <= 28:
+            # Réduction importante
+            font_size = 9
+            char_spacing = 13
+        else:
+            # Réduction maximale
+            font_size = 8
+            char_spacing = 11
+    
+        c.setFont("JapaneseFont", font_size)
+    
         # Paramètres de mise en page
         x_start = 150 * mm
         y_start = 140 * mm
         line_spacing = 12 * mm
-        char_spacing = 20
         margin_bottom = 10 * mm
         margin_top = 10 * mm
-
+    
         # Ajustement automatique de la position
         y_start = self.adjust_start_position(lines, postal_code, y_start, char_spacing, 
                                            page_height, margin_bottom)
+                                       
+        # Dessiner les cases du code postal (en haut à droite)
+        postal_x = page_width - 110 * mm  # Position à droite
+        postal_y = page_height - 20 * mm  # Position en haut
+    
+        # Dimensions des cases
+        case_width = 8 * mm
+        case_height = 10 * mm
+        spacing = 1 * mm
+    
+        # Dessiner les 7 cases (3 + tiret + 4)
+        for i in range(7):
+            x = postal_x + i * (case_width + spacing)
 
-        # Dessiner le code postal
-        x_postal = x_start + line_spacing
-        y_postal = y_start
-
-        for i, char in enumerate(postal_code):
-            if char == '〒':
-                char_width = c.stringWidth(char, "JapaneseFont", 14)
-                c.drawString(x_postal - char_width/4, y_postal, char)
+            if i == 3:  # Position du tiret
+                # Dessiner juste le tiret, pas de case
+                c.setStrokeColorRGB(0.8, 0, 0)  # Rouge
+                c.setLineWidth(1)
+                line_y = postal_y + case_height/2
+                c.line(x, line_y, x + case_width, line_y)
             else:
-                c.drawString(x_postal, y_postal, char)
-            y_postal -= char_spacing
-
+                # Dessiner les cases
+                if i < 3:  # 3 premières cases (bord gras)
+                    c.setStrokeColorRGB(0.8, 0, 0)  # Rouge
+                    c.setLineWidth(2)  # Gras
+                else:  # 4 dernières cases (bord fin)
+                    c.setStrokeColorRGB(0.8, 0, 0)  # Rouge
+                    c.setLineWidth(1)  # Fin
+    
+                c.setFillColorRGB(1, 1, 1)  # Fond blanc
+                c.rect(x, postal_y, case_width, case_height, stroke=1, fill=1)
+    
+        # Écrire les chiffres du code postal dans les cases
+        c.setFillColorRGB(0, 0, 0)  # Noir pour le texte
+        c.setFont("JapaneseFont", 12)
+        postal_digits = postal_code.replace('〒', '').replace('ｰ', '').replace('-', '')
+        digit_index = 0
+    
+        for i in range(7):
+            if i != 3 and digit_index < len(postal_digits):  # Pas sur le tiret
+                x = postal_x + i * (case_width + spacing)
+                char = postal_digits[digit_index]
+    
+                # Centrer le caractère dans la case
+                char_width = c.stringWidth(char, "JapaneseFont", 12)
+                text_x = x + (case_width - char_width) / 2
+                text_y = postal_y + 2 * mm
+    
+                c.drawString(text_x, text_y, char)
+                digit_index += 1
+    
+        # Remettre la police adaptée pour l'adresse
+        c.setFont("JapaneseFont", font_size)
+    
         # Dessiner les autres lignes
         for i, line in enumerate(lines):
             x = x_start - (i * line_spacing)
             y_offset = (i + 1) * 10 * mm
             y = y_start - y_offset
-    
+
             for j, char in enumerate(line):
                 current_y = y - (j * char_spacing)
                 if current_y < margin_bottom:
                     break
                 c.drawString(x, current_y, char)
-
+    
         c.save()
+    
+
 
     def adjust_start_position(self, lines, postal_code, y_start, char_spacing, 
                             page_height, margin_bottom):
