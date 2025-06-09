@@ -40,6 +40,18 @@ import tempfile
 import datetime
 import shutil
 import re
+import sys
+
+def resource_path(relative_path):
+    """Obtient le chemin vers les ressources, compatible PyInstaller"""
+    try:
+        # PyInstaller crée un dossier temporaire et y stocke le chemin dans _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        # Mode développement - utilise le répertoire du script
+        base_path = os.path.abspath(".")
+    
+    return os.path.join(base_path, relative_path)
 
 class EnvelopeGenerator:
     def __init__(self):
@@ -61,11 +73,9 @@ class EnvelopeGenerator:
     def setup_japanese_font(self):
         """Configure la police japonaise depuis le dossier fonts/"""
         try:
-            # Chercher le fichier de police dans le dossier fonts/
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            font_dir = os.path.join(script_dir, "fonts")
+            # Utiliser resource_path pour obtenir le bon chemin
+            font_dir = resource_path("fonts")
             
-            print(f"Script directory: {script_dir}")
             print(f"Font directory: {font_dir}")
             print(f"Font directory exists: {os.path.exists(font_dir)}")
             
@@ -99,11 +109,28 @@ class EnvelopeGenerator:
             
             if len(available_fonts) == 0:
                 print("No valid fonts found in fonts directory")
-            elif len(available_fonts) == 1:
+                # Essayer les polices spécifiques que vous avez mentionnées
+                specific_fonts = ["SawarabiMincho-Regular.ttf", "NotoSansJP-VariableFont_wght.ttf"]
+                for font_name in specific_fonts:
+                    font_path = resource_path(os.path.join("fonts", font_name))
+                    if os.path.exists(font_path):
+                        try:
+                            test_name = f"TestFont_{len(available_fonts)}"
+                            pdfmetrics.registerFont(TTFont(test_name, font_path))
+                            available_fonts.append({
+                                'name': font_name,
+                                'path': font_path,
+                                'display_name': font_name.replace('.ttf', '')
+                            })
+                            print(f"Found specific font: {font_name}")
+                        except Exception as e:
+                            print(f"Failed to load specific font {font_name}: {e}")
+            
+            if len(available_fonts) == 1:
                 # Une seule police, l'utiliser directement
                 selected_font = available_fonts[0]
                 print(f"Single font found: {selected_font['name']}")
-            else:
+            elif len(available_fonts) > 1:
                 # Plusieurs polices, demander à l'utilisateur de choisir
                 selected_font = self.show_font_selection_dialog(available_fonts)
             
