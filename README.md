@@ -3,6 +3,7 @@ Cela permet directement d'écrire les adresses correctement pour les enveloppes 
 
 ce qu'il reste à faire : 
 
-->mettre le code postal en horizontal
+-> des buildsnpour windows et linux 
+
 
 
