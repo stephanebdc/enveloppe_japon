@@ -1,33 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-
-# envejp.py Version 2
-# avec le code postal hozirontal et les lignes à taille automatique
+# envejp.py Version 3 20250614
 # Copyright (c) 2025 Stéphane BDC
 #
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-
 
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
@@ -51,7 +29,7 @@ def resource_path(relative_path):
     except Exception:
         # Mode développement - utilise le répertoire du script
         base_path = os.path.abspath(".")
-    
+
     return os.path.join(base_path, relative_path)
 
 class EnvelopeGenerator:
@@ -60,36 +38,36 @@ class EnvelopeGenerator:
         self.root.title("Générateur d'enveloppes japonaises")
         self.root.geometry("600x500")
         self.root.resizable(True, True)
-        
+
         # Variables
         self.pdf_temp_path = None
         self.generated_filename = None
-        
+
         # Initialiser la police japonaise
         self.setup_japanese_font()
-        
+
         # Créer l'interface
         self.create_interface()
-        
+
     def setup_japanese_font(self):
         """Configure la police japonaise depuis le dossier fonts/"""
         try:
             # Utiliser resource_path pour obtenir le bon chemin
             font_dir = resource_path("fonts")
-            
+
             print(f"Font directory: {font_dir}")
             print(f"Font directory exists: {os.path.exists(font_dir)}")
-            
+
             available_fonts = []
             if os.path.exists(font_dir):
                 files_in_dir = os.listdir(font_dir)
                 print(f"Files in fonts directory: {files_in_dir}")
-                
+
                 for font_file in files_in_dir:
                     if font_file.endswith(('.ttf', '.ttc')):  # Exclure .otf qui pose problème
                         font_path = os.path.join(font_dir, font_file)
                         print(f"Testing font: {font_path}")
-                        
+
                         # Tester si la police peut être chargée
                         try:
                             # Test avec un nom temporaire
@@ -104,10 +82,10 @@ class EnvelopeGenerator:
                         except Exception as font_error:
                             print(f"Failed to load {font_file}: {font_error}")
                             continue
-            
+
             font_found = None
             selected_font = None
-            
+
             if len(available_fonts) == 0:
                 print("No valid fonts found in fonts directory")
                 # Essayer les polices spécifiques que vous avez mentionnées
@@ -126,7 +104,7 @@ class EnvelopeGenerator:
                             print(f"Found specific font: {font_name}")
                         except Exception as e:
                             print(f"Failed to load specific font {font_name}: {e}")
-            
+
             if len(available_fonts) == 1:
                 # Une seule police, l'utiliser directement
                 selected_font = available_fonts[0]
@@ -134,7 +112,7 @@ class EnvelopeGenerator:
             elif len(available_fonts) > 1:
                 # Plusieurs polices, demander à l'utilisateur de choisir
                 selected_font = self.show_font_selection_dialog(available_fonts)
-            
+
             if selected_font:
                 try:
                     pdfmetrics.registerFont(TTFont("JapaneseFont", selected_font['path']))
@@ -143,7 +121,7 @@ class EnvelopeGenerator:
                     print(f"Successfully loaded selected font: {selected_font['name']}")
                 except Exception as font_error:
                     print(f"Failed to load selected font: {font_error}")
-            
+
             # Si aucune police trouvée dans fonts/, chercher les polices système
             if not font_found:
                 print("Searching system fonts...")
@@ -153,14 +131,14 @@ class EnvelopeGenerator:
                     "NotoSansCJK-Regular.ttc",
                     "fonts-japanese-gothic.ttf"
                 ]
-                
+
                 system_paths = [
                     "/System/Library/Fonts/",
                     "/usr/share/fonts/",
                     "C:/Windows/Fonts/",
                     os.path.expanduser("~/Library/Fonts/")
                 ]
-                
+
                 for sys_path in system_paths:
                     if os.path.exists(sys_path):
                         for font_file in possible_fonts:
@@ -177,7 +155,7 @@ class EnvelopeGenerator:
                                     continue
                     if font_found:
                         break
-            
+
             if font_found:
                 self.font_available = True
                 self.font_path = font_found
@@ -186,7 +164,7 @@ class EnvelopeGenerator:
                 self.font_available = False
                 self.selected_font_name = "Aucune"
                 print("No Japanese font could be loaded")
-                
+
         except Exception as e:
             self.font_available = False
             self.selected_font_name = "Erreur"
@@ -198,65 +176,65 @@ class EnvelopeGenerator:
         selection_window.title("Choix de la police")
         selection_window.geometry("400x300")
         selection_window.resizable(False, False)
-        
+
         # Centrer la fenêtre
         selection_window.transient(self.root)
         selection_window.grab_set()
-        
+
         selected_font = None
-        
+
         # Titre
-        title_label = tk.Label(selection_window, text="Plusieurs polices japonaises trouvées", 
+        title_label = tk.Label(selection_window, text="Plusieurs polices japonaises trouvées",
                               font=("Arial", 12, "bold"))
         title_label.pack(pady=10)
-        
+
         # Sous-titre
         subtitle_label = tk.Label(selection_window, text="Veuillez choisir la police à utiliser :")
         subtitle_label.pack(pady=5)
-        
+
         # Frame pour la liste
         list_frame = tk.Frame(selection_window)
         list_frame.pack(pady=10, padx=20, fill="both", expand=True)
-        
+
         # Listbox avec scrollbar
         scrollbar = tk.Scrollbar(list_frame)
         scrollbar.pack(side="right", fill="y")
-        
-        listbox = tk.Listbox(list_frame, yscrollcommand=scrollbar.set, 
+
+        listbox = tk.Listbox(list_frame, yscrollcommand=scrollbar.set,
                             font=("Arial", 10), height=8)
         listbox.pack(side="left", fill="both", expand=True)
         scrollbar.config(command=listbox.yview)
-        
+
         # Ajouter les polices à la liste
         for font in available_fonts:
             listbox.insert(tk.END, font['display_name'])
-        
+
         # Sélectionner le premier élément par défaut
         listbox.select_set(0)
-        
+
         # Preview du nom de fichier
         preview_frame = tk.Frame(selection_window)
         preview_frame.pack(pady=5)
-        
+
         preview_label = tk.Label(preview_frame, text="Fichier: ", font=("Arial", 9))
         preview_label.pack(side="left")
-        
-        preview_filename = tk.Label(preview_frame, text=available_fonts[0]['name'], 
+
+        preview_filename = tk.Label(preview_frame, text=available_fonts[0]['name'],
                                    font=("Arial", 9, "italic"), fg="gray")
         preview_filename.pack(side="left")
-        
+
         def update_preview(event):
             selection = listbox.curselection()
             if selection:
                 selected_index = selection[0]
                 preview_filename.config(text=available_fonts[selected_index]['name'])
-        
+
         listbox.bind('<<ListboxSelect>>', update_preview)
-        
+
         # Frame pour les boutons
         button_frame = tk.Frame(selection_window)
         button_frame.pack(pady=15)
-        
+
         def on_ok():
             nonlocal selected_font
             selection = listbox.curselection()
@@ -266,97 +244,96 @@ class EnvelopeGenerator:
             else:
                 selected_font = available_fonts[0]  # Fallback
             selection_window.destroy()
-        
+
         def on_cancel():
             nonlocal selected_font
             selected_font = available_fonts[0]  # Utiliser la première par défaut
             selection_window.destroy()
-        
+
         # Boutons
-        ok_btn = tk.Button(button_frame, text="Utiliser cette police", 
+        ok_btn = tk.Button(button_frame, text="Utiliser cette police",
                           command=on_ok, bg="#4CAF50", fg="grey",
                           font=("Arial", 10, "bold"), padx=20, pady=5)
         ok_btn.pack(side="left", padx=5)
-        
-        cancel_btn = tk.Button(button_frame, text="Première par défaut", 
+
+        cancel_btn = tk.Button(button_frame, text="Première par défaut",
                               command=on_cancel, bg="#6b6b6b", fg="grey",
                               font=("Arial", 10), padx=20, pady=5)
         cancel_btn.pack(side="left", padx=5)
-        
+
         # Permettre la validation avec Entrée
         def on_enter(event):
             on_ok()
-        
+
         selection_window.bind('<Return>', on_enter)
         listbox.focus_set()
-        
+
         # Attendre que la fenêtre soit fermée
         self.root.wait_window(selection_window)
-        
+
         return selected_font
-    
+
     def create_interface(self):
         """Crée l'interface utilisateur"""
         # Frame principal
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        
+
         # Configuration du redimensionnement
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         main_frame.columnconfigure(1, weight=1)
-        
+
         # Titre
-        title_label = ttk.Label(main_frame, text="Générateur d'enveloppes japonaises", 
+        title_label = ttk.Label(main_frame, text="Générateur d'enveloppes japonaises",
                                font=("Arial", 16, "bold"))
         title_label.grid(row=0, column=0, columnspan=2, pady=(0, 20))
-        
+
         # Code postal
         ttk.Label(main_frame, text="Code postal (ex: 〒160ｰ0007):").grid(row=1, column=0, sticky=tk.W, pady=5)
         self.postal_code_var = tk.StringVar(value="〒160ｰ0007")
         postal_entry = ttk.Entry(main_frame, textvariable=self.postal_code_var, width=20)
         postal_entry.grid(row=1, column=1, sticky=(tk.W, tk.E), pady=5)
-        
+
         # Adresse ligne 1
         ttk.Label(main_frame, text="Adresse ligne 1:").grid(row=2, column=0, sticky=tk.W, pady=5)
         self.address1_var = tk.StringVar(value="東京都新宿区 荒木町11-1")
         address1_entry = ttk.Entry(main_frame, textvariable=self.address1_var, width=50)
         address1_entry.grid(row=2, column=1, sticky=(tk.W, tk.E), pady=5)
-        
+
         # Adresse ligne 2
         ttk.Label(main_frame, text="Adresse ligne 2:").grid(row=3, column=0, sticky=tk.W, pady=5)
         self.address2_var = tk.StringVar(value="ハイム石川8号")
         address2_entry = ttk.Entry(main_frame, textvariable=self.address2_var, width=50)
         address2_entry.grid(row=3, column=1, sticky=(tk.W, tk.E), pady=5)
-        
+
         # Nom de l'entreprise
         ttk.Label(main_frame, text="Nom de l'entreprise:").grid(row=4, column=0, sticky=tk.W, pady=5)
         self.company_var = tk.StringVar(value="ステファン ビーディーシーLTD.")
         company_entry = ttk.Entry(main_frame, textvariable=self.company_var, width=50)
         company_entry.grid(row=4, column=1, sticky=(tk.W, tk.E), pady=5)
-        
+
         # Destinataire
         ttk.Label(main_frame, text="Destinataire:").grid(row=5, column=0, sticky=tk.W, pady=5)
         self.recipient_var = tk.StringVar(value="経理・藤原様")
         recipient_entry = ttk.Entry(main_frame, textvariable=self.recipient_var, width=50)
         recipient_entry.grid(row=5, column=1, sticky=(tk.W, tk.E), pady=5)
-        
-        
+
         # Frame pour les boutons
         button_frame = ttk.Frame(main_frame)
         button_frame.grid(row=6, column=0, columnspan=2, pady=20)
-        
+
         # Bouton vérifier avec style explicite
-        verify_btn = tk.Button(button_frame, text="Vérifier l'adresse", 
+        verify_btn = tk.Button(button_frame, text="Vérifier l'adresse",
                               command=self.verify_address,
-                              bg="#6b6b6b", fg="grey", 
+                              bg="#6b6b6b", fg="grey",
                               font=("Arial", 10, "bold"),
                               relief="raised", bd=2,
                               padx=10, pady=5)
         verify_btn.pack(side=tk.LEFT, padx=5)
-        
+
         # Bouton générer PDF
-        self.generate_btn = tk.Button(button_frame, text="Générer PDF", 
+        self.generate_btn = tk.Button(button_frame, text="Générer PDF",
                                      command=self.generate_pdf, state="disabled",
                                      bg="#6b6b6b", fg="grey",
                                      font=("Arial", 10, "bold"),
@@ -364,15 +341,15 @@ class EnvelopeGenerator:
                                      padx=10, pady=5,
                                      disabledforeground="gray")
         self.generate_btn.pack(side=tk.LEFT, padx=5)
-        
+
         # Bouton sauvegarder (initialement caché)
-        self.save_btn = tk.Button(button_frame, text="Sauvegarder le PDF", 
+        self.save_btn = tk.Button(button_frame, text="Sauvegarder le PDF",
                                  command=self.save_pdf,
                                  bg="#6b6b6b", fg="grey",
                                  font=("Arial", 10, "bold"),
                                  relief="raised", bd=2,
                                  padx=10, pady=5)
-        
+
         # Zone d'état
         self.status_text = tk.Text(main_frame, height=8, width=70)
         self.status_text.grid(row=7, column=0, columnspan=2, pady=10, sticky=(tk.W, tk.E))
@@ -456,172 +433,115 @@ class EnvelopeGenerator:
         try:
             # Créer un nom de fichier avec timestamp et portion d'adresse
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            company_clean = re.sub(r'[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', '', 
+            company_clean = re.sub(r'[^a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]', '',
                                  self.company_var.get())[:10]
             self.generated_filename = f"envelope_{timestamp}_{company_clean}.pdf"
-    
+
             # Créer un fichier temporaire
             temp_dir = tempfile.gettempdir()
             self.pdf_temp_path = os.path.join(temp_dir, self.generated_filename)
-    
+
             # Générer le PDF
             self.create_pdf(self.pdf_temp_path)
-    
+
             self.add_status(f"✅ PDF généré: {self.generated_filename}")
-    
+
             # Afficher le bouton de sauvegarde
             self.save_btn.pack(side=tk.LEFT, padx=5)
-    
+
         except Exception as e:
             self.add_status(f"❌ Erreur lors de la génération: {str(e)}")
             messagebox.showerror("Erreur", f"Impossible de générer le PDF:\n{str(e)}")
-    
+
     def create_pdf(self, filepath):
-        """Crée le PDF avec l'adresse saisie"""
-        # Création du PDF avec taille A5
-        c = canvas.Canvas(filepath, pagesize=(A5[1], A5[0]))
-    
-        # Dimensions de la page
-        page_width = A5[1]
-        page_height = A5[0]
-    
-        # Récupérer les données du formulaire
-        lines = []
-        if self.address1_var.get().strip():
-            lines.append(self.address1_var.get().strip())
-        if self.address2_var.get().strip():
-            lines.append(self.address2_var.get().strip())
-        if self.company_var.get().strip():
-            lines.append(self.company_var.get().strip())
-        if self.recipient_var.get().strip():
-            lines.append(self.recipient_var.get().strip())
-    
-        postal_code = self.postal_code_var.get().strip()
-    
-        # Trouver la ligne la plus longue
-        max_line_length = max(len(line) for line in lines) if lines else 0
-    
-        # Calculer la taille de police et l'espacement en fonction de la longueur max
-        if max_line_length <= 16:
-            # Paramètres normaux
-            font_size = 14
-            char_spacing = 20
-        elif max_line_length <= 20:
-            # Réduction légère
-            font_size = 12
-            char_spacing = 18
-        elif max_line_length <= 24:
-            # Réduction moyenne
-            font_size = 10
-            char_spacing = 15
-        elif max_line_length <= 28:
-            # Réduction importante
-            font_size = 9
-            char_spacing = 13
-        else:
-            # Réduction maximale
-            font_size = 8
-            char_spacing = 11
-    
-        c.setFont("JapaneseFont", font_size)
-    
-        # Paramètres de mise en page
-        x_start = 150 * mm
-        y_start = 140 * mm
-        line_spacing = 12 * mm
-        margin_bottom = 10 * mm
-        margin_top = 10 * mm
-    
-        # Ajustement automatique de la position
-        y_start = self.adjust_start_position(lines, postal_code, y_start, char_spacing, 
-                                           page_height, margin_bottom)
-                                       
-        # Dessiner les cases du code postal (en haut à droite)
-        postal_x = page_width - 110 * mm  # Position à droite
-        postal_y = page_height - 20 * mm  # Position en haut
-    
-        # Dimensions des cases
-        case_width = 8 * mm
-        case_height = 10 * mm
-        spacing = 1 * mm
-    
-        # Dessiner les 7 cases (3 + tiret + 4)
-        for i in range(7):
-            x = postal_x + i * (case_width + spacing)
+            """Crée le PDF avec l'adresse saisie (décalage code postal)"""
+            c = canvas.Canvas(filepath, pagesize=A5)
+            page_width, page_height = A5
 
-            if i == 3:  # Position du tiret
-                # Dessiner juste le tiret, pas de case
-                c.setStrokeColorRGB(0.8, 0, 0)  # Rouge
-                c.setLineWidth(1)
-                line_y = postal_y + case_height/2
-                c.line(x, line_y, x + case_width, line_y)
-            else:
-                # Dessiner les cases
-                if i < 3:  # 3 premières cases (bord gras)
-                    c.setStrokeColorRGB(0.8, 0, 0)  # Rouge
-                    c.setLineWidth(2)  # Gras
-                else:  # 4 dernières cases (bord fin)
-                    c.setStrokeColorRGB(0.8, 0, 0)  # Rouge
-                    c.setLineWidth(1)  # Fin
-    
-                c.setFillColorRGB(1, 1, 1)  # Fond blanc
-                c.rect(x, postal_y, case_width, case_height, stroke=1, fill=1)
-    
-        # Écrire les chiffres du code postal dans les cases
-        c.setFillColorRGB(0, 0, 0)  # Noir pour le texte
-        c.setFont("JapaneseFont", 12)
-        postal_digits = postal_code.replace('〒', '').replace('ｰ', '').replace('-', '')
-        digit_index = 0
-    
-        for i in range(7):
-            if i != 3 and digit_index < len(postal_digits):  # Pas sur le tiret
-                x = postal_x + i * (case_width + spacing)
-                char = postal_digits[digit_index]
-    
-                # Centrer le caractère dans la case
-                char_width = c.stringWidth(char, "JapaneseFont", 12)
-                text_x = x + (case_width - char_width) / 2
-                text_y = postal_y + 2 * mm
-    
-                c.drawString(text_x, text_y, char)
-                digit_index += 1
-    
-        # Remettre la police adaptée pour l'adresse
-        c.setFont("JapaneseFont", font_size)
-    
-        # Dessiner les autres lignes
-        for i, line in enumerate(lines):
-            x = x_start - (i * line_spacing)
-            y_offset = (i + 1) * 10 * mm
-            y = y_start - y_offset
+            lines = []
+            if self.address1_var.get().strip(): lines.append(self.address1_var.get().strip())
+            if self.address2_var.get().strip(): lines.append(self.address2_var.get().strip())
+            if self.company_var.get().strip(): lines.append(self.company_var.get().strip())
+            if self.recipient_var.get().strip(): lines.append(self.recipient_var.get().strip())
 
-            for j, char in enumerate(line):
-                current_y = y - (j * char_spacing)
-                if current_y < margin_bottom:
-                    break
-                c.drawString(x, current_y, char)
-    
-        c.save()
-    
+            postal_code = self.postal_code_var.get().strip()
+        
+            max_line_length = max(len(line) for line in lines) if lines else 0
+            if max_line_length <= 16: font_size, char_spacing = 14, 20
+            elif max_line_length <= 20: font_size, char_spacing = 12, 18
+            elif max_line_length <= 24: font_size, char_spacing = 10, 15
+            elif max_line_length <= 28: font_size, char_spacing = 9, 13
+            else: font_size, char_spacing = 8, 11
+            c.setFont("JapaneseFont", font_size)
 
+            x_start = page_width - 40 * mm
+            y_start_offset_from_postal = 9 * mm
+            line_spacing = 12 * mm
 
-    def adjust_start_position(self, lines, postal_code, y_start, char_spacing, 
-                            page_height, margin_bottom):
-        """Ajuste la position de départ pour éviter le débordement"""
-        max_height = len(postal_code) * char_spacing
+            case_width, case_height, spacing = 8 * mm, 10 * mm, 1 * mm
+        
+            total_postal_block_width = (8 * case_width) + (7 * spacing)
+        
+            ### MODIFICATION ICI ###
+            # Calcul du décalage vers la droite (équivalent à la largeur de 2 cases)
+            shift_offset = 2 * (case_width + spacing)
+            # La position est maintenant : centrée + le décalage
+            postal_x = (page_width - total_postal_block_width) / 2 + shift_offset
+        
+            postal_y = page_height - 25 * mm
 
-        for i, line in enumerate(lines):
-            line_height = len(line) * char_spacing + (i + 1) * 10 * mm
-            max_height = max(max_height, line_height)
+            y_start = postal_y - y_start_offset_from_postal
 
-        margin_top = 10 * mm
-        available_height = page_height - margin_bottom - margin_top
+            # Le reste de la fonction pour dessiner les éléments reste identique...
+            for i in range(8):
+                current_x = postal_x + i * (case_width + spacing)
+                if i == 3:
+                    c.setStrokeColorRGB(0.8, 0, 0)
+                    c.setLineWidth(1.5)
+                    dash_width = case_width / 5
+                    dash_x_start = current_x + (case_width - dash_width) / 2
+                    dash_y = postal_y + case_height / 2
+                    c.line(dash_x_start, dash_y, dash_x_start + dash_width, dash_y)
+                else:
+                    c.setStrokeColorRGB(0.8, 0, 0)
+                    c.setLineWidth(2 if i < 3 else 1)
+                    c.setFillColorRGB(1, 1, 1)
+                    c.rect(current_x, postal_y, case_width, case_height, stroke=1, fill=1)
 
-        if y_start - max_height < margin_bottom:
-            new_y_start = min(y_start, page_height - margin_top - max_height + y_start)
-            return new_y_start
+            c.setFillColorRGB(0, 0, 0)
+            c.setFont("JapaneseFont", 12)
+            postal_digits = postal_code.replace('〒', '').replace('ｰ', '').replace('-', '')
+            digit_index = 0
 
-        return y_start
+            for i in range(8):
+                if i != 3 and digit_index < len(postal_digits):
+                    current_x = postal_x + i * (case_width + spacing)
+                    char = postal_digits[digit_index]
+                    char_width = c.stringWidth(char, "JapaneseFont", 12)
+                    text_x = current_x + (case_width - char_width) / 2
+                    text_y = postal_y + 2 * mm
+                    c.drawString(text_x, text_y, char)
+                    digit_index += 1
+
+            c.setFont("JapaneseFont", font_size)
+
+            margin_bottom = 10 * mm
+            indent_offset = 6 * mm
+        
+            for i, line in enumerate(lines):
+                x = x_start - (i * line_spacing)
+                y = y_start - (i * indent_offset)
+
+                if i == 3:
+                    additional_vertical_offset = 6 * char_spacing
+                    y -= additional_vertical_offset
+
+                for j, char in enumerate(line):
+                    current_y = y - (j * char_spacing)
+                    if current_y < margin_bottom: break
+                    c.drawString(x, current_y, char)
+
+            c.save()
 
     def save_pdf(self):
         """Permet à l'utilisateur de sauvegarder le PDF"""
@@ -659,3 +579,4 @@ class EnvelopeGenerator:
 if __name__ == "__main__":
     app = EnvelopeGenerator()
     app.run()
+
